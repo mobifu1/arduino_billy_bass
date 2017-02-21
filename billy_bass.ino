@@ -12,7 +12,8 @@ AF_DCMotor Body_Motor(2);
 int SoundInPin = A0; //sound in for OK Google
 int LedPin = 13; //in case you want an LED to activate while mouth moves
 int sensorValue  = 0;
-int pause_counter = 0;
+int end_counter = 0;
+int start_counter = 0;
 boolean billy_big_mouth_bass_on = true; //global on/off by playing music
 
 //-------------------------------------------------------------------------------------------------------
@@ -42,28 +43,27 @@ void loop() {
   // read the input on analog pin 0:
   sensorValue = analogRead(SoundInPin);
   //Serial.println(String(sensorValue));
-  // we Map another value of this for LED that can be a integer betwen 0..255
-  int LEDValue = map(sensorValue, 0, 512, 0, 255);
+
   // We Map it here down to the possible range of  movement.
   sensorValue = map(sensorValue, 0, 512, 0, 180);
   // note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings.
-  int MoveDelayValue = map(sensorValue, 0, 255, 0, sensorValue);
 
   // maping the same reading a little bit more down to calculate the time your motor gets
   if (sensorValue > 10) { // to cut off some static readings
     delay(1);  // a static delay to smooth things out...
     if (billy_big_mouth_bass_on == true) mouth_move();
     delay(1);
-    pause_counter = 0;
+    end_counter = 0;
+    start_counter++;
     //Serial.println("Reset");
   }
   else {
 
-    if (pause_counter >= 0) {
-      pause_counter++;
+    if (end_counter >= 0) {
+      end_counter++;
       //Serial.println("Incr");
     }
-    if (pause_counter > 5000)motor_release();
+    if (end_counter > 5000)motor_release();
   }
 }
 //-------------------------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ void mouth_move() {
   int randnumber = random(1, 4);
   analogWrite(LedPin, sensorValue);
   // now move the motor
-  body_move(255);
+  if (start_counter > 3)body_move(255);
   Mouth_Motor.run(FORWARD);
   for (int i = 140; i < 255; i++) {
     Mouth_Motor.setSpeed(i);
@@ -100,8 +100,10 @@ void tail_move(int tail_speed) {
 //-------------------------------------------------------------------------------------------------------
 void motor_release() {
 
-  pause_counter = -1;
+  end_counter = -1;
+  start_counter = -1;
   //Serial.println("Release");
+  Mouth_Motor.run(RELEASE);//stop
   Body_Motor.run(RELEASE);//stop
 }
 //-------------------------------------------------------------------------------------------------------
